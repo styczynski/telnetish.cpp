@@ -11,10 +11,10 @@ private:
   TCPConnection* connection;
 
 public:
-  
+
   TCPServerEvent(TCPServer* serverSource, TCPConnection* connection);
   TCPServer& getSource();
-  TCPConnection* getServerConnection();
+  TCPConnection& getConnection();
   virtual std::string getType() {
     return "UNKNOWN";
   }

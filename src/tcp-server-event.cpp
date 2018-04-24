@@ -5,8 +5,8 @@ TCPServerEvent::TCPServerEvent(TCPServer* serverSource, TCPConnection* connectio
   this->connection = connection;
 }
 
-TCPConnection* TCPServerEvent::getServerConnection() {
-  return this->connection;
+TCPConnection& TCPServerEvent::getConnection() {
+  return *(this->connection);
 }
 
 TCPServer& TCPServerEvent::getSource() {

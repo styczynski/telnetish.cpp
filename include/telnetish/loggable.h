@@ -56,9 +56,12 @@ private:
 public:
 
   Loggable();
+  void clear();
   void reportError(std::string error);
   void log(std::string message);
+  void sendMessage(LoggableMessage message);
   void onMessage(logListener_t handler, LoggableMessageLevel minimumMessageLevel=LOG_MESSAGE_ANY);
+  void redirectLogTo(Loggable& loggable, LoggableMessageLevel minimumMessageLevel=LOG_MESSAGE_ANY);
 
   static logListener_t defaultPrintStdoutMessageListener();
 

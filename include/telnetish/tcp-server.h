@@ -1,12 +1,15 @@
 #ifndef __TCP_SERVER_H__
 #define __TCP_SERVER_H__
 
+#define DEFAULT_TCP_LISTEN_QUEUE_LENGTH 1000
+
 class TCPServer;
 
+#include <telnetish/server.h>
 #include <telnetish/loggable.h>
 #include <telnetish/tcp-connection.h>
-#include <telnetish/tcp-server-event.h>
-#include <telnetish/tcp-server-handler.h>
+#include <telnetish/server-event.h>
+#include <telnetish/server-handler.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -17,31 +20,41 @@ class TCPServer;
 #include <inttypes.h>
 #include <functional>
 
-#define DEFAULT_LISTEN_QUEUE_LENGTH  10
-#define DEFAULT_SERVER_PORT          3000
+class TCPServerEventData {
 
-class TCPServer : public Loggable, public TCPServerHandler {
-private:
+};
+
+class TCPServer : public Server<TCPServerEventData> {
+public:
+  using TCPServerEvent = ServerEvent<TCPServerEventData>;
+
+protected:
   int in_sock;
   int out_sock;
-  int port;
   bool inited;
+  bool on;
   int next_client_id;
-  
+
 public:
-  
-  TCPServer(const int port=DEFAULT_SERVER_PORT) : Loggable(), TCPServerHandler() {
-    this->port = port;
+
+  TelnetServer(const int port=DEFAULT_SERVER_PORT) : Server<TelnetServerEventData>(port) {
     this->inited = false;
     this->in_sock = 0;
     this->out_sock = 0;
     this->next_client_id = -1;
+    this->on = false;
   }
-  
-  void setPort(const int port=DEFAULT_SERVER_PORT);
-  bool init();
-  bool start(const int input_queue_length=DEFAULT_LISTEN_QUEUE_LENGTH);
-  
+
+  ~TCPServer() {
+
+  }
+
+  bool init() override;
+
+  bool start() override;
+
+  void shutdown() override;
+
 };
 
 #endif /* __TCP_SERVER_H__ */

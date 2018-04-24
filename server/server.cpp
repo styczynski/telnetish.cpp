@@ -1,15 +1,14 @@
-#include <telnetish/tcp-server.h>
+#include <telnetish/telnet-server.h>
 #include <iostream>
 
 int main(void) {
 
-  TCPServer server;
+  TelnetServer server;
 
   server.setPort(3000);
-
   server.onMessage(server.defaultPrintStdoutMessageListener());
 
-  server.onClientConnected([](TCPServerEvent event){
+  server.onClientConnected([](TelnetServer::TelnetServerEvent event){
     std::cout << "New client connected!\n";
     event.getConnection() << "Hello!";
   });

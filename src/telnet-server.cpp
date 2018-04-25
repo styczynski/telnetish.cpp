@@ -11,6 +11,7 @@ const std::vector<std::pair<std::string, int>> TelnetMessage::TELNET_COMMAND_TAB
   TNDEF(   BINARY         )
   TNDEF(   ECHO           )
   TNDEF(   REQUEST_ACK    )
+  TNDEF(   LINEMODE       )
 };
 
 bool TelnetServer::init() {
@@ -27,12 +28,22 @@ bool TelnetServer::init() {
 
   this->server.onClientConnected([this](TCPServer::TCPServerEvent tcpEvent){
     this->log("New client connected to the TELNET");
-    
+
     Connection& con = tcpEvent.getConnection();
-    
-    con << TelnetMessage::commandFrom("IAC DO ECHO");
-    con << TelnetMessage::commandFrom("IAC REQUEST_ACK");
-    
+
+    if(this->optionEcho) {
+      con << TelnetMessage::commandFrom("IAC WONT ECHO");
+    } else {
+      con << TelnetMessage::commandFrom("IAC WILL ECHO");
+    }
+
+    if(this->optionLinemode) {
+      con << TelnetMessage::commandFrom("IAC DO LINEMODE");
+    } else {
+      con << TelnetMessage::commandFrom("IAC DONT LINEMODE");
+    }
+    //con << TelnetMessage::commandFrom("IAC REQUEST_ACK");
+
     TelnetServerEvent event(this, tcpEvent.getConnectionSource());
     this->clientConnected(event);
   });

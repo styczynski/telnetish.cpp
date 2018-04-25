@@ -31,6 +31,7 @@ class TelnetServer;
 #define     _ECHO            1
 #define     _REQUEST_ACK     246
 #define     _NOOP            241
+#define     _LINEMODE        34
 
 #define TNDEF(NAME) { #NAME, _ ## NAME },
 
@@ -38,49 +39,49 @@ class TelnetMessage {
 public:
 
   static const std::vector<std::pair<std::string, int>> TELNET_COMMAND_TABLE;
-  
+
   static int findTelnetCommandByName(std::string name) {
-    
+
     const int len = TELNET_COMMAND_TABLE.size();
     for(int i=0;i<len;++i) {
       if(TELNET_COMMAND_TABLE[i].first == name) {
         return TELNET_COMMAND_TABLE[i].second;
       }
     }
-    
+
     throw "Invalid Telnet command: unknown command was specified!";
   }
-  
+
   static std::string findTelnetCommandByID(int id) {
-    
+
     const int len = TELNET_COMMAND_TABLE.size();
     for(int i=0;i<len;++i) {
       if(TELNET_COMMAND_TABLE[i].second == id) {
         return TELNET_COMMAND_TABLE[i].first;
       }
     }
-    
+
     throw "Invalid Telnet command: unknown command was specified!";
   }
 
   static std::vector<std::string> decodeTelnetCommand(std::vector<int> command) {
     const int size = command.size();
     std::vector<std::string> result;
-    
+
     for(int i=0;i<size;++i) {
       result.push_back(findTelnetCommandByID(command[i]));
     }
-    
+
     return result;
-  }  
-  
+  }
+
   static std::vector<int> encodeTelnetCommand(std::string command) {
     const int size = command.size();
     int lastBegin = 0;
     bool firstCommand = true;
-    
+
     std::vector<int> result;
-    
+
     for(int i=0;i<size;++i) {
       if(command[i]==' ') {
         std::string token = command.substr(lastBegin, i-lastBegin);
@@ -96,22 +97,33 @@ public:
         firstCommand = false;
       }
     }
-    
+
     if(firstCommand == true) {
       throw "Invalid Telnet command: Single command (should be min. two)!";
     }
-    
+
     std::string token = command.substr(lastBegin, size-lastBegin);
     int code = findTelnetCommandByName(token);
     result.push_back(code);
-    
+
     return result;
   }
 
   static Message commandFrom(std::string command) {
     return Message(encodeTelnetCommand(command));
   }
-  
+
+  static bool isCommand(const Message& message) {
+    if(message.getSize() >= 2) {
+      return message[0] == _IAC && message[1] != _IAC;
+    }
+    return message[0] == _IAC;
+  }
+
+  static bool isText(const Message& message) {
+    return !isCommand(message);
+  }
+
 };
 
 class TelnetServerEventData {
@@ -125,15 +137,27 @@ public:
 protected:
   TCPServer server;
   bool inited;
+  bool optionEcho;
+  bool optionLinemode;
 
 public:
 
   TelnetServer(const int port=DEFAULT_SERVER_PORT) : Server<TelnetServerEventData>(port) {
     this->inited = false;
+    this->optionEcho = true;
+    this->optionLinemode = false;
   }
 
   ~TelnetServer() {
 
+  }
+
+  void setOptionEcho(bool optionValue) {
+    this->optionEcho = optionValue;
+  }
+
+  void setOptionLinemode(bool optionValue) {
+    this->optionLinemode = optionValue;
   }
 
   bool init() override;

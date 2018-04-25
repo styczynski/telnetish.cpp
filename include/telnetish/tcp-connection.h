@@ -11,7 +11,7 @@
 #include <inttypes.h>
 #include <vector>
 #include <functional>
-
+#include <iostream>
 
 #define DEFAULT_CONNECTION_ID  -1
 #define CONNECTION_NO_SOCKET   -1
@@ -40,7 +40,8 @@ public:
   }
 
   int readData(char* output, const int length) override {
-    return read(this->socket, output, length);
+    const int len = read(this->socket, output, length);
+    return len;
   }
 
   int writeData(const char* input, const int length) override {
@@ -53,16 +54,16 @@ public:
   Connection& operator>>(std::string& output) override {
     static char buffer[DEFAULT_MESSAGE_BUFFER_LENGTH];
     buffer[0] = '\0';
-    this->readData(buffer, DEFAULT_MESSAGE_BUFFER_LENGTH);
-    output = std::string(buffer);
+    const int len = this->readData(buffer, DEFAULT_MESSAGE_BUFFER_LENGTH);
+    output = std::string(buffer, len);
     return *this;
   }
-  
+
   Connection& operator>>(Message& output) override {
     static char buffer[DEFAULT_MESSAGE_BUFFER_LENGTH];
     buffer[0] = '\0';
-    this->readData(buffer, DEFAULT_MESSAGE_BUFFER_LENGTH);
-    output = Message(buffer);
+    const int len = this->readData(buffer, DEFAULT_MESSAGE_BUFFER_LENGTH);
+    output = Message(std::string(buffer, len));
     return *this;
   }
 
@@ -80,7 +81,7 @@ public:
     this->writeData(input, strlen(input));
     return *this;
   }
-  
+
   Connection& send(std::vector<int> input) override {
     const int size = input.size();
     char buffer[size+7];
@@ -91,7 +92,7 @@ public:
     this->writeData(buffer, size);
     return *this;
   }
-  
+
 };
 
 

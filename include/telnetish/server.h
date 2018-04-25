@@ -8,6 +8,7 @@ template< typename EventT > class Server;
 #include <telnetish/server-handler.h>
 #include <telnetish/server-event.h>
 #include <telnetish/loggable.h>
+#include <string>
 
 template< typename EventT >
 class Server : public Loggable, public ServerHandler<ServerEvent<EventT>> {
@@ -25,6 +26,10 @@ public:
 
   void setPort(const int port=DEFAULT_SERVER_PORT) {
     this->port = port;
+  }
+
+  void setPort(std::string port) {
+    this->port = std::stoi(port);
   }
 
   virtual bool init() = 0;

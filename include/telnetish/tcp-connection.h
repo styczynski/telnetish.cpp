@@ -9,6 +9,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include <vector>
 #include <functional>
 
 
@@ -56,9 +57,17 @@ public:
     output = std::string(buffer);
     return *this;
   }
+  
+  Connection& operator>>(Message& output) override {
+    static char buffer[DEFAULT_MESSAGE_BUFFER_LENGTH];
+    buffer[0] = '\0';
+    this->readData(buffer, DEFAULT_MESSAGE_BUFFER_LENGTH);
+    output = Message(buffer);
+    return *this;
+  }
 
-  Connection& operator<<(std::string input) override {
-    this->writeData(input.c_str(), input.size());
+  Connection& operator<<(Message input) override {
+    this->writeData(input.getContents(), input.getSize());
     return *this;
   }
 
@@ -71,6 +80,18 @@ public:
     this->writeData(input, strlen(input));
     return *this;
   }
+  
+  Connection& send(std::vector<int> input) override {
+    const int size = input.size();
+    char buffer[size+7];
+    int i = 0;
+    for(auto c : input ) {
+      buffer[i++] = (char) c;
+    }
+    this->writeData(buffer, size);
+    return *this;
+  }
+  
 };
 
 

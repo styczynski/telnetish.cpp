@@ -4,6 +4,9 @@
 #define DEFAULT_CONNECTION_ID  -1
 #define CONNECTION_NO_SOCKET   -1
 
+#include <telnetish/message.h>
+#include <vector>
+#include <string>
 
 class Connection {
 protected:
@@ -41,9 +44,12 @@ public:
   virtual int writeData(const char* input, const int length) = 0;
 
   virtual Connection& operator>>(std::string& output) = 0;
-  virtual Connection& operator<<(std::string input) = 0;
+  virtual Connection& operator>>(Message& output) = 0;
+  virtual Connection& operator<<(Message input) = 0;
   virtual Connection& operator>>(char* output) = 0;
   virtual Connection& operator<<(const char* input) = 0;
+  
+  virtual Connection& send(std::vector<int> input) = 0;
 };
 
 

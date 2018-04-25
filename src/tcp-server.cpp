@@ -19,6 +19,8 @@ bool TCPServer::init() {
   server_address.sin_addr.s_addr = htonl(INADDR_ANY);
   server_address.sin_port = htons(this->port);
 
+  this->log(std::string("Starting TCP server at port ")+std::to_string(this->port));
+  
   if (bind(this->in_sock, (struct sockaddr *) &server_address, sizeof(server_address)) < 0) {
     this->reportError("Could not bind socket to the specified port.");
     return false;

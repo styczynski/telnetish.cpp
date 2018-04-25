@@ -37,7 +37,7 @@ protected:
 
 public:
 
-  TelnetServer(const int port=DEFAULT_SERVER_PORT) : Server<TelnetServerEventData>(port) {
+  TCPServer(const int port=DEFAULT_SERVER_PORT) : Server<TCPServerEventData>(port) {
     this->inited = false;
     this->in_sock = 0;
     this->out_sock = 0;

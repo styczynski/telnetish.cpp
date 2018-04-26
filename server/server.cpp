@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
           exit(1);
         }
         
-        //start_color();
+        start_color();
         //init_pair(1, COLOR_BLACK, COLOR_WHITE);
         
         

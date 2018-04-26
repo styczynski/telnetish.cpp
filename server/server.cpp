@@ -38,9 +38,14 @@ int main(int argc, char** argv) {
   server.onClientConnected([](TelnetServer::TelnetServerEvent event){
 
         
-    int cycle = 0, pid, p[2], row, col;
+    int cycle = 0, pid, p[2], r[2], row, col;
 
     if(pipe(p) == -1) {
+        perror("pipe call error");
+        return(1);
+    }
+    
+    if(pipe(r) == -1) {
         perror("pipe call error");
         return(1);
     }
@@ -54,19 +59,54 @@ int main(int argc, char** argv) {
           perror( "dup2 failed" );
           return(1);
         }
+        
+        if(dup2(r[0], 0) == -1 ) {
+          perror( "dup2 failed" );
+          return(1);
+        }
+        
+        
+        /*if(dup2(p[0], 0) == -1 ) {
+          perror( "dup2 failed" );
+          return(1);
+        }*/
+        
         setvbuf(stdout, NULL, _IOLBF, 1000);
         initscr();
-        init_pair(1, COLOR_YELLOW, COLOR_GREEN);
+        
+        if(has_colors() == FALSE) {
+          endwin();
+          printf("Your terminal does not support color\n");
+          exit(1);
+        }
+        
+        //start_color();
+        //init_pair(1, COLOR_BLACK, COLOR_WHITE);
+        
+        clear();
         
         while(true) {
-          attron(COLOR_PAIR(1));
-          addch('-');
-          attroff(COLOR_PAIR(1));
+          char c = getch();
+          
+          printf("\n");
+          fflush(stdout);
+          
+          clear();
+          for(int y=10;y<=20;++y) {
+            for(int x=10;x<=20;++x) {
+              move(x, y);
+              if(x==10 || x==20 || y==10 || y==20) {
+                printw("#");
+              }
+            }
+          }
+          
+          move(15, 15);
+          addch(c);
           
           refresh();
-          
           cycle++;
-          usleep(1000000);
+          usleep(5000);
         }
         break;
 
@@ -74,26 +114,31 @@ int main(int argc, char** argv) {
       
       default:
         std::string mystr;
-        if(dup2(p[0], 0 ) == -1 ) {
+        /*if(dup2(p[0], 0 ) == -1 ) {
           perror( "dup2 failed" );
           return(1);
-        }
+        }*/
         
         std::stringstream ss;
+        Message m;
         while(true) {
             
-            char inp = 0;
-            if(fscanf(stdin, "%c", &inp) > 0) {
-              printf("%d ", (int)inp);
-              if(inp == _IAC) {
-                event.getConnection() << std::vector<int>({ _IAC, _IAC });
-              } else {
-                event.getConnection() << std::vector<int>({ (int)inp });
-              }
-              fflush(stdout);
+            char buf[4096];
+            int len = 0;
+            
+            event.getConnection() >> m;
+            
+            //len = event.getConnection().readData(buf, sizeof(buf));
+            write(r[1], m.getContents(), m.getSize());
+            std::cout << "[TEXT] " << m.getContents()[0] << "\n";
+            
+            if(len = read(p[0], buf, sizeof(buf))) {
+              //const char* mes = "HELLO";
+              //write(p[1], mes, strlen(mes));
+              event.getConnection().writeData(buf, len);
             }
             
-            usleep(100000);
+            usleep(50000);
         }
 
         break;

@@ -63,7 +63,7 @@ public:
   int getSize() const {
     return this->length;
   }
-
+  
   std::string toString() const {
     return std::string(this->content, (size_t) this->length);
   }

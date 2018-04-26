@@ -10,6 +10,10 @@ endif ()
 #set_property(GLOBAL PROPERTY RULE_MESSAGES OFF)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
+# Needs ncurses to be compiled
+find_package(Curses REQUIRED)
+include_directories(${CURSES_INCLUDE_DIR})
+
 # Compilation flags
 set(CMAKE_C_FLAGS "-std=c11 -Wall -Wextra -pedantic")
 set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
@@ -23,3 +27,6 @@ file(GLOB SRC_FILES ./src/*.cpp ./server/*.cpp)
 
 # Specify source files
 add_executable(telnet_server ${SRC_FILES})
+
+# Link libraries
+target_link_libraries(telnet_server ${CURSES_LIBRARIES})

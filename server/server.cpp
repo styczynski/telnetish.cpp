@@ -37,7 +37,8 @@ int main(int argc, char** argv) {
 
   server.onClientConnected([](TelnetServer::TelnetServerEvent event){
 
-        
+    if(true) {
+  
     int cycle = 0, pid, p[2], r[2], row, col;
 
     if(pipe(p) == -1) {
@@ -50,6 +51,7 @@ int main(int argc, char** argv) {
         return(1);
     }
 
+    char c = ' ';
     switch (pid=fork()) {
       case -1: perror("error: fork call");
         return(2);
@@ -65,12 +67,6 @@ int main(int argc, char** argv) {
           return(1);
         }
         
-        
-        /*if(dup2(p[0], 0) == -1 ) {
-          perror( "dup2 failed" );
-          return(1);
-        }*/
-        
         setvbuf(stdout, NULL, _IOLBF, 1000);
         initscr();
         
@@ -83,13 +79,11 @@ int main(int argc, char** argv) {
         //start_color();
         //init_pair(1, COLOR_BLACK, COLOR_WHITE);
         
+        
         clear();
         
         while(true) {
-          char c = getch();
-          
-          printf("\n");
-          fflush(stdout);
+          c = getch();
           
           clear();
           for(int y=10;y<=20;++y) {
@@ -104,9 +98,12 @@ int main(int argc, char** argv) {
           move(15, 15);
           addch(c);
           
-          refresh();
+          refresh();          
+          printf("\n");
+          fflush(stdout);
+          
           cycle++;
-          usleep(5000);
+          
         }
         break;
 
@@ -114,13 +111,13 @@ int main(int argc, char** argv) {
       
       default:
         std::string mystr;
-        /*if(dup2(p[0], 0 ) == -1 ) {
-          perror( "dup2 failed" );
-          return(1);
-        }*/
         
         std::stringstream ss;
         Message m;
+
+        int flags = fcntl(p[0], F_GETFL, 0);
+        fcntl(p[0], F_SETFL, flags | O_NONBLOCK);
+        
         while(true) {
             
             char buf[4096];
@@ -128,31 +125,40 @@ int main(int argc, char** argv) {
             
             event.getConnection() >> m;
             
-            //len = event.getConnection().readData(buf, sizeof(buf));
-            write(r[1], m.getContents(), m.getSize());
-            std::cout << "[TEXT] " << m.getContents()[0] << "\n";
-            
-            if(len = read(p[0], buf, sizeof(buf))) {
-              //const char* mes = "HELLO";
-              //write(p[1], mes, strlen(mes));
-              event.getConnection().writeData(buf, len);
+            if(TelnetMessage::isCommand(m)) {
+              std::cout << "[COMMAND] " << TelnetMessage::commandDescription(m) << "\n";
+            } else {
+
+              write(r[1], m.getContents(), m.getSize());
+              std::cout << "[TEXT]    " << m.toString() << "\n";
+              
+              usleep(5000);
+              
+              int refcount = 0;
+              while(len = read(p[0], buf, sizeof(buf))) {
+                event.getConnection().writeData(buf, len);
+                ++refcount;
+                if(refcount > 10) break;
+              }
+              
             }
-            
-            usleep(50000);
         }
 
         break;
     }
   
-    /*Message message;
+    }
+  
+    Message message;
     while(true) {
       event.getConnection() >> message;
+  
       if(TelnetMessage::isCommand(message)) {
-
+        std::cout << "[COMMAND] " << TelnetMessage::commandDescription(message) << "\n";
       } else {
-        std::cout << "[TEXT] " << message.bytesDumpString() << "\n";
+        std::cout << "[TEXT]    " << message.toString() << "\n";
       }
-    }*/
+    }
     
   });
 

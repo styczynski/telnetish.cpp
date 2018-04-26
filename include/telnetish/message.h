@@ -76,6 +76,14 @@ public:
     result += "}";
     return result;
   }
+  
+  std::vector<int> toBytes() const {
+    std::vector<int> result;
+    for(int i=0;i<this->length;++i) {
+      result.push_back(((int)(this->content[i])+256)%256);
+    }
+    return result;
+  }
 
   int operator[](const int index) const {
     if(index < 0 || index >= this->length) return 0;

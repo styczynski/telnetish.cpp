@@ -32,6 +32,7 @@ private:
   int p[2];
   int r[2];
   bool inited;
+  bool controlled;
   RendererFn body;
   MessageSentCallbackFn sentCallback;
   MessageReceivedCallbackFn receivedCallback;
@@ -40,6 +41,7 @@ public:
 
   TermProgram(RendererFn bodyFn) {
     inited = false;
+    controlled = false;
     body = bodyFn;
     sentCallback = [](TermProgram& rp, Message& m)->void {};
     receivedCallback = [](TermProgram& rp, Message& m)->void {};
@@ -47,6 +49,10 @@ public:
   
   TermProgram() {
     TermProgram([]()->void {});
+  }
+  
+  void setControlled(bool value = true) {
+    controlled = value;
   }
   
   void setBody(RendererFn fn) {
@@ -113,6 +119,8 @@ public:
   }
   
   void wait(WaitingFn waitFn) {
+    if(!controlled) return;
+    
     int flags = fcntl(p[0], F_GETFL, 0);
     fcntl(p[0], F_SETFL, flags | O_NONBLOCK);
     while(true) {
@@ -122,6 +130,14 @@ public:
   }
   
   int start() {
+    
+    if(!controlled) {
+      int flags = fcntl(0, F_GETFL, 0);
+      fcntl(0, F_SETFL, flags & (~O_NONBLOCK));
+      initscr();
+      body();
+      return 0;
+    }
     
     if(pipe(p) == -1) {
         perror("pipe call error");

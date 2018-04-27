@@ -8,7 +8,7 @@
 #include <sstream>
 #define MAX_LEN 99
 
-#include <telnetish/telnet-server.h>
+#include <telnetish/simple-telnet-server.h>
 #include <telnetish/term-program.h>
 #include <telnetish/message.h>
 #include <iostream>
@@ -57,37 +57,18 @@ void renderer() {
 
 int main(int argc, char** argv) {
 
-  TelnetServer server;
-
   if(argc<=1) {
     std::cout << "Usage: server [port]\n";
     return 1;
   }
 
+  TermProgram program(renderer);
+  program.start();
+  return 0;
+  
+  SimpleTelnetServer server(program);
   server.setPort(argv[1]);
-  server.setOptionEcho(false);
-  server.setOptionLinemode(true);
   server.onMessage(server.defaultPrintStdoutMessageListener());
-
-  server.onClientConnected([](TelnetServer::TelnetServerEvent event){
-    TermProgram program(renderer);
-    program.onMessageReceived([&event](TermProgram& program, Message& m){
-      event.getConnection() << m;
-    });
-    program.start();
-    program.wait([&event](TermProgram& program){
-      Message m;
-      event.getConnection() >> m;
-      if(TelnetMessage::isCommand(m)) {
-        std::cout << "[COMMAND] " << TelnetMessage::commandDescription(m) << "\n";
-      } else {
-        program.send(m);
-      }
-      usleep(5000);
-    });
-    
-  });
-
   server.start();
 
   return 0;

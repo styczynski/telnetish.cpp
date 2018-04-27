@@ -55,7 +55,9 @@ public:
     static char buffer[DEFAULT_MESSAGE_BUFFER_LENGTH];
     buffer[0] = '\0';
     const int len = this->readData(buffer, DEFAULT_MESSAGE_BUFFER_LENGTH);
-    output = std::string(buffer, len);
+    if(len > 0) {
+      output = std::string(buffer, len);
+    }
     return *this;
   }
 
@@ -63,7 +65,9 @@ public:
     static char buffer[DEFAULT_MESSAGE_BUFFER_LENGTH];
     buffer[0] = '\0';
     const int len = this->readData(buffer, DEFAULT_MESSAGE_BUFFER_LENGTH);
-    output = Message(std::string(buffer, len));
+    if(len > 0) {
+      output = Message(std::string(buffer, len));
+    }
     return *this;
   }
 

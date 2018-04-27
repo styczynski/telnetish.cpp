@@ -22,20 +22,67 @@
 #include <sys/stat.h>
 
 
-int menu1();
-int menu2();
+int menu1(int);
+int menu2(int);
 
-
-int menu1() {
-    
-    if(has_colors() == FALSE) {
-      endwin();
-      printf("Your terminal does not support color\n");
-      exit(1);
+void menu_end() {
+  time_t t;
+  srand((unsigned) time(&t));
+  
+  int len = 0;
+  for(int t=0;t<1000;++t) {
+    move(rand() % 25 + 10, rand() % 80 + 10);
+    addch(' ');
+    usleep(100);
+    refresh();
+  }
+  
+  for(int y=10;y<=35;++y) {
+    for(int x=10;x<=90;++x) {
+      move(y, x);
+      addch(' ');
     }
-    
-    start_color();
-    init_pair(1, COLOR_BLACK, COLOR_WHITE);
+  }
+  
+  refresh();
+
+  usleep(100000);
+  mvprintw(15, 15, "GOODBYE :)");
+  mvprintw(17, 10, "Please feel free to leave a feedback.");
+  mvprintw(18, 10, "I would like to know about your telnet experiences.");
+  mvprintw(19, 10, "Have a nice day!");
+  mvprintw(21, 15, "Piotr Stczynski");
+  refresh();
+  
+  usleep(3500000);
+}
+
+void menu_start() {
+  
+  time_t t;
+  srand((unsigned) time(&t));
+  
+  clear();
+  int len = 0;
+  for(int t=0;t<1000;++t) {
+    move(rand() % 25 + 10, rand() % 80 + 10);
+    addch('#');
+    usleep(100);
+    refresh();
+  }
+  
+  for(int y=10;y<=35;++y) {
+    for(int x=10;x<=90;++x) {
+      move(y, x);
+      addch('#');
+    }
+  }
+  refresh();
+  
+  menu1(0);
+}
+
+int menu1(int first_opt) {
     
     std::string list[] = {
       "Opcja A",
@@ -51,7 +98,7 @@ int menu1() {
     
     char item[20];
     int ch;
-    int i=0;
+    int i=first_opt;
  
     WINDOW *menuWindow;
     WINDOW *descriptionWindow;
@@ -63,7 +110,7 @@ int menu1() {
     box(descriptionWindow, 0, 0);
     
     for(int i=0; i<3; i++ ) {
-      if(i==0) {
+      if(i==first_opt) {
           wattron(menuWindow, A_STANDOUT);
       } else {
           wattroff(menuWindow, A_STANDOUT);
@@ -75,10 +122,7 @@ int menu1() {
     wrefresh(menuWindow);
     wrefresh(descriptionWindow);
  
-    i=0;
-    noecho();
     keypad(menuWindow, TRUE);
-    curs_set(0);
      
     while((ch = wgetch(menuWindow)) != 10){ 
       
@@ -117,24 +161,23 @@ int menu1() {
     delwin(menuWindow);
     
     if(i == 2) {
-      endwin();
-      return 0;
+      menu_end();
+      return -1;
     }
     
-    return menu2();
+    if(i == 0) {
+      attron(COLOR_PAIR(2));
+      mvprintw(25, 20, "@ Selected A ");
+      attroff(COLOR_PAIR(2));
+      refresh();
+      return menu1(i);
+    }
+    
+    return menu2(0);
 }
 
 
-int menu2() {
-    
-    if(has_colors() == FALSE) {
-      endwin();
-      printf("Your terminal does not support color\n");
-      exit(1);
-    }
-    
-    start_color();
-    init_pair(1, COLOR_BLACK, COLOR_WHITE);
+int menu2(int first_opt) {
     
     std::string list[] = {
       "Opcja B1",
@@ -150,7 +193,7 @@ int menu2() {
     
     char item[20];
     int ch;
-    int i=0;
+    int i = first_opt;
  
     WINDOW *menuWindow;
     WINDOW *descriptionWindow;
@@ -162,7 +205,7 @@ int menu2() {
     box(descriptionWindow, 0, 0);
     
     for(int i=0; i<3; i++ ) {
-      if(i==0) {
+      if(i==first_opt) {
           wattron(menuWindow, A_STANDOUT);
       } else {
           wattroff(menuWindow, A_STANDOUT);
@@ -174,10 +217,7 @@ int menu2() {
     wrefresh(menuWindow);
     wrefresh(descriptionWindow);
  
-    i=0;
-    noecho();
     keypad(menuWindow, TRUE);
-    curs_set(0);
      
     while((ch = wgetch(menuWindow)) != 10){ 
       
@@ -216,14 +256,42 @@ int menu2() {
     delwin(menuWindow);
     
     if(i == 2) {
-      return menu1();
+      return menu1(0);
     }
     
-    return i;
+    attron(COLOR_PAIR(2));
+    if(i == 0) {
+      mvprintw(25, 20, "@ Selected B1");
+    } else {
+      mvprintw(25, 20, "@ Selected B2");
+    }
+    attroff(COLOR_PAIR(2));
+    refresh();
+    
+    return menu2(i);
 }
 
 void renderer() {
-  menu1();
+  
+  if(has_colors() == FALSE) {
+    endwin();
+    printf("Your terminal does not support color\n");
+    exit(1);
+  }
+  
+  noecho();
+  curs_set(0);
+    
+  start_color();
+  init_pair(1, COLOR_BLACK, COLOR_WHITE);
+  init_pair(2, COLOR_WHITE, COLOR_BLUE);
+    
+  menu_start();
+
+  echo();
+  curs_set(1);
+  refresh();
+  endwin();
 }
 
 int main(int argc, char** argv) {
@@ -234,8 +302,8 @@ int main(int argc, char** argv) {
   }
 
   TermProgram program(renderer);
-  program.start();
-  return 0;
+  //program.start();
+  //return 0;
   
   SimpleTelnetServer server(program);
   server.setPort(argv[1]);

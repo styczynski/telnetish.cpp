@@ -1,4 +1,5 @@
 #include <telnetish/tcp-server.h>
+#include <fcntl.h>
 
 bool TCPServer::init() {
 
@@ -63,6 +64,8 @@ bool TCPServer::start() {
     this->log("Wait for incoming connection...");
 
     this->out_sock = accept(this->in_sock, (struct sockaddr *) &client_address, &client_address_len);
+    fcntl(this->out_sock, F_SETFL, O_NONBLOCK);
+    
     if (this->out_sock < 0) {
       this->reportError("Could not accept client connection.");
       return false;

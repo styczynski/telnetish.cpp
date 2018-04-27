@@ -60,6 +60,7 @@ public:
   }
   
   Message receive() {
+    
     std::string ret;
     
     char buf[4096];
@@ -126,6 +127,13 @@ public:
     while(true) {
       waitFn(*this);
       receive();
+      
+      int status = 0;
+      int ret = waitpid(pid, &status, WNOHANG);
+      if(ret != 0) {
+        return;
+      }
+    
     }
   }
   
@@ -168,6 +176,7 @@ public:
         setvbuf(stdout, NULL, _IOLBF, 1000);
         initscr();
         body();
+        exit(0);
         break;
 
       default:
@@ -175,8 +184,6 @@ public:
         fcntl(p[0], F_SETFL, flags | O_NONBLOCK);
         break;
     }
-
-    
   }
   
   void end() {

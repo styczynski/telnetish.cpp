@@ -29,7 +29,7 @@ public:
         Message m;
         event.getConnection() >> m;
         if(TelnetMessage::isCommand(m)) {
-          std::cout << "[COMMAND] " << TelnetMessage::commandDescription(m) << "\n";
+          //std::cout << "[COMMAND] " << TelnetMessage::commandDescription(m) << "\n";
         } else {
           program.send(m);
         }

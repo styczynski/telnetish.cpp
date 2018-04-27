@@ -12,8 +12,23 @@ private:
   int length;
 
   void importData(const char* bytes, const int length=-1) {
+    if(bytes == nullptr) {
+      this->content = nullptr;
+      this->length = 0;
+      return;
+    }
+    
     const int len = (length<0) ? strlen(bytes) : length;
-    this->content = (char*) malloc(sizeof(char) * len);
+    if(len <= 0) {
+      this->content = nullptr;
+      this->length = 0;
+      return;
+    }
+    
+    this->content = (char*) malloc(sizeof(char) * (len+7));
+    for(int i=0;i<len;++i) {
+      this->content[i] = 0;
+    }
     strcpy(this->content, bytes);
     this->length = len;
   }
@@ -65,6 +80,7 @@ public:
   }
   
   std::string toString() const {
+    if(this->content == nullptr) return "";
     return std::string(this->content, (size_t) this->length);
   }
 

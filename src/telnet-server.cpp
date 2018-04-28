@@ -1,6 +1,8 @@
 #include <telnetish/telnet-server.h>
 #include <string>
 
+#define TELNET_INITIALIZATION_MAX_TIMEOUT_MS 250
+
 const std::vector<std::pair<std::string, int>> TelnetMessage::TELNET_COMMAND_TABLE = {
   
   TNDEF(   BINARY         )
@@ -52,8 +54,78 @@ const std::vector<std::pair<std::string, int>> TelnetMessage::TELNET_COMMAND_TAB
   TNDEF(   DO             )
   TNDEF(   DONT           )
   TNDEF(   IAC            )
-  
 };
+
+const std::vector<std::pair<std::string, int>> TelnetMessage::TELNET_NEGOTIATION_COMMAND_TABLE = {
+  TNDEF(   IS             )
+  TNDEF(   SEND           )
+  TNDEF(   INFO           )
+};
+
+TelnetServerEventData TelnetServer::basicInitializationRoutine(Connection& con) {
+  
+  TelnetServerEventData clientData;
+  
+  clientData.clientTerminalType = "UNKNOWN";
+  
+  char buffer[100];
+  buffer[0] = 0;
+  
+  if(this->optionEcho) {
+    con << TelnetMessage::commandFrom("IAC WONT ECHO");
+  } else {
+    con << TelnetMessage::commandFrom("IAC WILL ECHO");
+  }
+  
+  if(this->optionLinemode) {
+    con << TelnetMessage::commandFrom("IAC DO LINEMODE");
+    con << TelnetMessage::commandFrom("IAC WILL SUPRESS_GA");
+  } else {
+    con << TelnetMessage::commandFrom("IAC DONT LINEMODE");
+    con << TelnetMessage::commandFrom("IAC DONT SUPRESS_GA");
+  }
+  
+  int cycle = 0;
+  while(true) {
+    Message message;
+    con >> message;
+    usleep(1000);
+    ++cycle;
+    if(cycle > 250) {
+      break;
+    }
+  }
+  
+  con << TelnetMessage::commandFrom("IAC DO TERM_TYPE");
+  cycle = 0;
+  
+  while(true) {
+    Message message;
+    con >> message;
+    if(message.getSize() > 0) {
+      if(TelnetMessage::isCommand(message)) {
+        std::string com = TelnetMessage::commandDescription(message);
+        if(sscanf(com.c_str(), "IAC WILL %s", buffer)) {
+          std::string willCommandCat(buffer);
+          if(willCommandCat == "TERM_TYPE") {
+            con << TelnetMessage::commandFrom("IAC SB TERM_TYPE SEND IAC SE");
+          }
+        } else if(sscanf(com.c_str(), "IAC SB TERM_TYPE IS %s IAC SE", buffer)) {
+          clientData.clientTerminalType = std::string(buffer);
+          break;
+        }
+      }
+    }
+    usleep(1000);
+    ++cycle;
+    if(cycle > TELNET_INITIALIZATION_MAX_TIMEOUT_MS) {
+      break;
+    }
+  }
+  
+  return clientData;
+}
+
 
 bool TelnetServer::init() {
   if(this->inited) {
@@ -71,21 +143,10 @@ bool TelnetServer::init() {
     this->log("New client connected to the TELNET");
 
     Connection& con = tcpEvent.getConnection();
-
-    if(this->optionEcho) {
-      con << TelnetMessage::commandFrom("IAC WONT ECHO");
-    } else {
-      con << TelnetMessage::commandFrom("IAC WILL ECHO");
-    }
-
-    if(this->optionLinemode) {
-      con << TelnetMessage::commandFrom("IAC DO LINEMODE");
-    } else {
-      con << TelnetMessage::commandFrom("IAC DONT LINEMODE");
-    }
-    //con << TelnetMessage::commandFrom("IAC REQUEST_ACK");
-
-    TelnetServerEvent event(this, tcpEvent.getConnectionSource());
+    
+    TelnetServerEventData clientData = basicInitializationRoutine(con);
+    
+    TelnetServerEvent event(this, tcpEvent.getConnectionSource(), clientData);
     this->clientConnected(event);
   });
 

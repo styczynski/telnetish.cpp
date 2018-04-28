@@ -24,7 +24,10 @@ class TelnetServer;
 
 
 #define     _BINARY          0
+#define     _IS              0
 #define     _ECHO            1
+#define     _SEND            1
+#define     _INFO            2
 #define     _SUPRESS_GA      3
 #define     _STATUS          5
 #define     _TIMING_MARK     6
@@ -81,9 +84,19 @@ class TelnetMessage {
 public:
 
   static const std::vector<std::pair<std::string, int>> TELNET_COMMAND_TABLE;
+  static const std::vector<std::pair<std::string, int>> TELNET_NEGOTIATION_COMMAND_TABLE;
+  
+  static int findTelnetCommandByName(std::string name, const bool SBSearchMode=false) {
 
-  static int findTelnetCommandByName(std::string name) {
-
+    if(SBSearchMode) {
+      const int len = TELNET_NEGOTIATION_COMMAND_TABLE.size();
+      for(int i=0;i<len;++i) {
+        if(TELNET_NEGOTIATION_COMMAND_TABLE[i].first == name) {
+          return TELNET_NEGOTIATION_COMMAND_TABLE[i].second;
+        }
+      }
+    }
+  
     const int len = TELNET_COMMAND_TABLE.size();
     for(int i=0;i<len;++i) {
       if(TELNET_COMMAND_TABLE[i].first == name) {
@@ -94,8 +107,17 @@ public:
     throw "Invalid Telnet command: unknown command was specified!";
   }
 
-  static std::string findTelnetCommandByID(int id) {
+  static std::string findTelnetCommandByID(int id, const bool SBSearchMode=false) {
   
+    if(SBSearchMode) {
+      const int len = TELNET_NEGOTIATION_COMMAND_TABLE.size();
+      for(int i=0;i<len;++i) {
+        if(TELNET_NEGOTIATION_COMMAND_TABLE[i].second == id) {
+          return TELNET_NEGOTIATION_COMMAND_TABLE[i].first;
+        }
+      }
+    }
+    
     const int len = TELNET_COMMAND_TABLE.size();
     for(int i=0;i<len;++i) {
       if(TELNET_COMMAND_TABLE[i].second == id) {
@@ -104,15 +126,51 @@ public:
     }
 
     return std::string("<") + std::to_string(id) + ">";
-    //throw "Invalid Telnet command: unknown command was specified!";
   }
 
   static std::vector<std::string> decodeTelnetCommand(std::vector<int> command) {
     const int size = command.size();
+    bool SBSearchMode = false;
+    bool textMode = false;
     std::vector<std::string> result;
 
     for(int i=0;i<size;++i) {
-      result.push_back(findTelnetCommandByID(command[i]));
+      
+      if(command[i] == _SB && !textMode) {
+          SBSearchMode = true;
+      }
+      if(command[i] == _SE && !textMode) {
+        SBSearchMode = false;
+      }
+      if(command[i] == _IAC && textMode) {
+        textMode = false;
+      }
+      
+      std::string commandCode = "";
+      
+      if(!textMode) {
+        commandCode = findTelnetCommandByID(command[i], SBSearchMode);
+        result.push_back(commandCode);
+      } else {
+        
+        char textBuffer[1000];
+        int textBufferLength = 0;
+        while(i<size && command[i] != _IAC) {
+          textBuffer[textBufferLength] = command[i];
+          ++i;
+          ++textBufferLength;
+        }
+        textBuffer[textBufferLength] = 0;
+        result.push_back(std::string(textBuffer, textBufferLength));
+        
+        --i;
+        continue;
+      }
+      
+      if(command[i] == _IS && !textMode) {
+        textMode = true;
+      }
+      
     }
 
     return result;
@@ -122,33 +180,50 @@ public:
     const int size = command.size();
     int lastBegin = 0;
     bool firstCommand = true;
-
+    bool SBSearchMode = false;
+    bool textMode = false;
+    
     std::vector<int> result;
 
     for(int i=0;i<size;++i) {
       if(command[i]==' ') {
+        
         std::string token = command.substr(lastBegin, i-lastBegin);
-        int code = findTelnetCommandByName(token);
-        if(code == _IAC && !firstCommand) {
-          throw "Invalid Telnet command: IAC is not first command!";
+        int code = findTelnetCommandByName(token, SBSearchMode);
+        
+        if(code == _SB && !textMode) {
+          SBSearchMode = true;
         }
-        if(code != _IAC && firstCommand) {
-          throw "Invalid Telnet command: Missing IAC header!";
+        if(code == _SE && !textMode) {
+          SBSearchMode = false;
         }
-        result.push_back(code);
+        if(code == _IAC && textMode) {
+          textMode = false;
+        }
+        
+        if(!textMode) {
+          code = findTelnetCommandByName(token, SBSearchMode);
+          result.push_back(code);
+        } else {
+          const int tokenLen = token.size();
+          for(int j=0;j<tokenLen;++j) {
+            result.push_back(((((int)token[j])+256)%256));
+          }
+        }
+
+        if(code == _IS && !textMode) {
+          textMode = true;
+        }
+        
         lastBegin = i+1;
         firstCommand = false;
       }
     }
 
-    if(firstCommand == true) {
-      throw "Invalid Telnet command: Single command (should be min. two)!";
-    }
-
     std::string token = command.substr(lastBegin, size-lastBegin);
-    int code = findTelnetCommandByName(token);
+    int code = findTelnetCommandByName(token, SBSearchMode);
     result.push_back(code);
-
+    
     return result;
   }
 
@@ -161,7 +236,10 @@ public:
     std::string out = "";
     const int len = strs.size();
     for(int i=0;i<len;++i) {
-      out += strs[i] + " ";
+      out += strs[i];
+      if(i!=len-1) {
+        out += " ";
+      }
     }
     return out;
   }
@@ -180,13 +258,18 @@ public:
 };
 
 class TelnetServerEventData {
-
+public:
+  std::string clientTerminalType;
 };
 
 class TelnetServer : public Server<TelnetServerEventData> {
 public:
   using TelnetServerEvent = ServerEvent<TelnetServerEventData>;
+  
+private:
 
+  TelnetServerEventData basicInitializationRoutine(Connection& con);
+ 
 protected:
   TCPServer server;
   bool inited;

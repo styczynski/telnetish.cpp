@@ -74,7 +74,8 @@ bool TCPServer::start() {
     this->log("Connected to a new client. Setup connection and run handlers.");
 
     TCPConnection clientConnection(this->out_sock, this->next_client_id);
-    this->clientConnected(TCPServerEvent(this, &clientConnection));
+    TCPServerEventData clientData;
+    this->clientConnected(TCPServerEvent(this, &clientConnection, clientData));
 
     this->log("Ending client connection.");
 
@@ -83,7 +84,7 @@ bool TCPServer::start() {
       return false;
     }
 
-    this->clientDisconnected(TCPServerEvent(this, &clientConnection));
+    this->clientDisconnected(TCPServerEvent(this, &clientConnection, clientData));
 
     this->log("Client connection dumped.");
   }

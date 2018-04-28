@@ -10,21 +10,21 @@ class ServerEvent {
 private:
   Server<DataT>* source;
   Connection* connection;
-  DataT* payload;
+  DataT payload;
 
 public:
 
-  ServerEvent(Server<DataT>* serverSource, Connection* connection, DataT* payload = nullptr) {
+  ServerEvent(Server<DataT>* serverSource, Connection* connection, DataT payload) {
     this->source = serverSource;
     this->connection = connection;
     this->payload = payload;
   }
 
-  DataT* getPayload() {
+  DataT getPayload() {
     return this->payload;
   }
 
-  void setPayload(DataT* payload = nullptr) {
+  void setPayload(DataT payload) {
     this->payload = payload;
   }
 

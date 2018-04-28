@@ -21,16 +21,17 @@
 
 class TermProgram {
 public:
-  using RendererFn = std::function<void(void)>;
+  using RendererFn = std::function<void(TermProgram&)>;
   using MessageSentCallbackFn = std::function<void(TermProgram&, Message&)>;
   using MessageReceivedCallbackFn = std::function<void(TermProgram&, Message&)>;
-  using WaitingFn = std::function<void(TermProgram&)>;
+  using WaitingFn = std::function<bool(TermProgram&)>;
   
   
 private:
   int pid;
   int p[2];
   int r[2];
+  std::string terminalTypeName;
   bool inited;
   bool controlled;
   RendererFn body;
@@ -45,10 +46,22 @@ public:
     body = bodyFn;
     sentCallback = [](TermProgram& rp, Message& m)->void {};
     receivedCallback = [](TermProgram& rp, Message& m)->void {};
+    terminalTypeName = "";
   }
   
   TermProgram() {
-    TermProgram([]()->void {});
+    TermProgram([](TermProgram& program)->void {});
+  }
+  
+  void setTerminalType(std::string type) {
+    terminalTypeName = type;
+  }
+  
+  std::string getTerminalType() {
+    if(terminalTypeName == "") {
+      return "UNKNOWN";
+    }
+    return terminalTypeName;
   }
   
   void setControlled(bool value = true) {
@@ -89,6 +102,11 @@ public:
   }
   
   void send(Message message) {
+    for(int i=1;i<message.getSize();++i) {
+      if(message[i-1] == 13 && message[i] == 10) {
+        message.setByte(i-1, '?');
+      }
+    }
     write(r[1], message.getContents(), message.getSize());
     sentCallback(*this, message);
   }
@@ -124,8 +142,14 @@ public:
     
     int flags = fcntl(p[0], F_GETFL, 0);
     fcntl(p[0], F_SETFL, flags | O_NONBLOCK);
+    
+    flags = fcntl(r[1], F_GETFL, 0);
+    fcntl(r[1], F_SETFL, flags | O_NONBLOCK);
+    
     while(true) {
-      waitFn(*this);
+      if(!waitFn(*this)) {
+        return;
+      }
       receive();
       
       int status = 0;
@@ -139,11 +163,17 @@ public:
   
   int start() {
     
+    inited = true;
+    
     if(!controlled) {
       int flags = fcntl(0, F_GETFL, 0);
       fcntl(0, F_SETFL, flags & (~O_NONBLOCK));
-      initscr();
-      body();
+      if(terminalTypeName.size() > 0) {
+        newterm(terminalTypeName.c_str(), stdout, stdin);
+      } else {
+        initscr();
+      }
+      body(*this);
       return 0;
     }
     
@@ -174,14 +204,21 @@ public:
         }
         
         setvbuf(stdout, NULL, _IOLBF, 1000);
-        initscr();
-        body();
+        if(terminalTypeName.size() > 0) {
+          newterm(terminalTypeName.c_str(), stdout, stdin);
+        } else {
+          initscr();
+        }
+        body(*this);
         exit(0);
         break;
 
       default:
         int flags = fcntl(p[0], F_GETFL, 0);
         fcntl(p[0], F_SETFL, flags | O_NONBLOCK);
+        
+        flags = fcntl(r[1], F_GETFL, 0);
+        fcntl(r[1], F_SETFL, flags | O_NONBLOCK);
         break;
     }
   }
@@ -190,6 +227,7 @@ public:
     
     if(inited) {
       inited = false;
+      kill(pid, SIGKILL);
     } else {
       return;
     }

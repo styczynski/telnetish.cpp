@@ -5,15 +5,16 @@
 #define CONNECTION_NO_SOCKET   -1
 
 #include <telnetish/message.h>
+#include <telnetish/data-source.h>
 #include <vector>
 #include <string>
 
-class Connection {
+class Connection : public DataSource {
 protected:
   int socket;
   int id;
   bool opened;
-
+  
 public:
 
   Connection(const int socket=CONNECTION_NO_SOCKET, const int id=DEFAULT_CONNECTION_ID) {
@@ -39,17 +40,7 @@ public:
   bool isOpened() const {
     return this->opened;
   }
-
-  virtual int readData(char* output, const int length) = 0;
-  virtual int writeData(const char* input, const int length) = 0;
-
-  virtual Connection& operator>>(std::string& output) = 0;
-  virtual Connection& operator>>(Message& output) = 0;
-  virtual Connection& operator<<(Message input) = 0;
-  virtual Connection& operator>>(char* output) = 0;
-  virtual Connection& operator<<(const char* input) = 0;
   
-  virtual Connection& send(std::vector<int> input) = 0;
 };
 
 

@@ -27,9 +27,8 @@ private:
     
     this->content = (char*) malloc(sizeof(char) * (len+7));
     for(int i=0;i<len;++i) {
-      this->content[i] = 0;
+      this->content[i] = bytes[i];
     }
-    strcpy(this->content, bytes);
     this->length = len;
   }
 
@@ -47,6 +46,10 @@ public:
   Message(const char* message) {
     this->importData(message);
   }
+  
+  Message(const char* message, const int length) {
+    this->importData(message, length);
+  }
 
   Message(std::string message) {
     this->importData(message.c_str());
@@ -63,12 +66,17 @@ public:
   }
 
   void operator=(const Message& message) {
+    if(this->content != nullptr) {
+      free(this->content);
+      this->content = nullptr;
+    }
     this->importData(message.content, message.length);
   }
 
   ~Message() {
     free(this->content);
     this->content = nullptr;
+    this->length = 0;
   }
 
   const char* getContents() const {
@@ -101,6 +109,11 @@ public:
     return result;
   }
 
+  void setByte(const int index, const int value) {
+    if(index < 0 || index >= this->length) return;;
+    this->content[index] = (char) value;
+  }
+  
   int operator[](const int index) const {
     if(index < 0 || index >= this->length) return 0;
     return (int)(this->content[index]);

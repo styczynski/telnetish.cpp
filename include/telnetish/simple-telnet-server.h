@@ -6,6 +6,8 @@ class SimpleTelnetServer;
 #include <telnetish/telnet-server.h>
 #include <telnetish/term-program.h>
 
+#define MAX_AYT_TIMEOUT 1000
+
 class SimpleTelnetServer : public TelnetServer {
 public:
   
@@ -21,21 +23,56 @@ public:
     onClientConnected([this](TelnetServer::TelnetServerEvent event){
       TermProgram program = this->prog;
       program.setControlled(true);
-      program.onMessageReceived([&event](TermProgram& program, Message& m){
+      if(event.getPayload().clientTerminalType != "UNKNOWN") {
+        program.setTerminalType(event.getPayload().clientTerminalType);
+      }
+      
+      int aytProgramCounter = 0;
+      program.onMessageReceived([&event, &aytProgramCounter](TermProgram& program, Message& m){
         event.getConnection() << m;
+        aytProgramCounter = 0;
       });
       program.start();
-      program.wait([&event](TermProgram& program){
+      
+      int aytCounter = 0;
+      program.wait([&event, &aytCounter, &aytProgramCounter](TermProgram& program)->bool {
         Message m;
         event.getConnection() >> m;
-        if(TelnetMessage::isCommand(m)) {
-          //std::cout << "[COMMAND] " << TelnetMessage::commandDescription(m) << "\n";
+        ++aytProgramCounter;
+        if(m.getSize() > 0) {
+          if(!TelnetMessage::isCommand(m)) {
+            //std::cout << "[TEXT] " << m.bytesDumpString() << "\n";
+            //std::cout.flush();
+            program.send(m);
+            //usleep(50000);
+            //program.send(Message("?"));
+            usleep(100000);
+          } else {
+            //Message com = Message(TelnetMessage::commandDescription(m));
+            //std::cout << "[COM] " << com.toString() << "\n";
+            //std::cout.flush();
+          }
+          aytCounter = 0;
         } else {
-          program.send(m);
+          ++aytCounter;
+          if(aytCounter > MAX_AYT_TIMEOUT) {
+            //std::cout << "[TIMEOUT]\n";
+            //std::cout.flush();
+            return false;
+          }
+        }
+        if(aytCounter % 50 == 0) {
+          event.getConnection() << TelnetMessage::commandFrom("IAC DO STATUS");
+        }
+        if(aytProgramCounter > 500) {
+          program.send(Message("?"));
+          aytProgramCounter = 0;
         }
         usleep(5000);
+        return true;
       });
       
+      program.end();
     });
   }
   

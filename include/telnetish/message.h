@@ -95,7 +95,7 @@ public:
   std::string bytesDumpString() const {
     std::string result = "{ ";
     for(int i=0;i<this->length;++i) {
-      result += std::to_string(this->content[i]) + " ";
+      result += std::to_string((((int)(this->content[i]))+256)%256) + " ";
     }
     result += "}";
     return result;
@@ -116,7 +116,7 @@ public:
   
   int operator[](const int index) const {
     if(index < 0 || index >= this->length) return 0;
-    return (int)(this->content[index]);
+    return (((int)(this->content[index]))+256)%256;
   }
 
 };

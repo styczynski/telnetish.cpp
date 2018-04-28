@@ -35,33 +35,31 @@ public:
       program.start();
       
       int aytCounter = 0;
-      program.wait([&event, &aytCounter, &aytProgramCounter](TermProgram& program)->bool {
+      program.wait([this, &event, &aytCounter, &aytProgramCounter](TermProgram& program)->bool {
         Message m;
         event.getConnection() >> m;
         ++aytProgramCounter;
         if(m.getSize() > 0) {
           if(!TelnetMessage::isCommand(m)) {
-            //std::cout << "[TEXT] " << m.bytesDumpString() << "\n";
-            //std::cout.flush();
             program.send(m);
-            //usleep(50000);
-            //program.send(Message("?"));
             usleep(100000);
+            if(isVerboseMode) {
+              log("Client send data: "+m.bytesDumpString());
+            }
           } else {
-            //Message com = Message(TelnetMessage::commandDescription(m));
-            //std::cout << "[COM] " << com.toString() << "\n";
-            //std::cout.flush();
+            
           }
           aytCounter = 0;
         } else {
           ++aytCounter;
           if(aytCounter > MAX_AYT_TIMEOUT) {
-            //std::cout << "[TIMEOUT]\n";
-            //std::cout.flush();
+            if(isVerboseMode) {
+              log("Client does not respond. Should terminate telnet session.");
+            }
             return false;
           }
         }
-        if(aytCounter % 50 == 0) {
+        if(aytCounter % 800 == 0) {
           event.getConnection() << TelnetMessage::commandFrom("IAC DO STATUS");
         }
         if(aytProgramCounter > 200) {

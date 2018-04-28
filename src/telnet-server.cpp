@@ -64,6 +64,10 @@ const std::vector<std::pair<std::string, int>> TelnetMessage::TELNET_NEGOTIATION
 
 TelnetServerEventData TelnetServer::basicInitializationRoutine(Connection& con) {
   
+  if(this->isVerboseMode) {
+    this->log("Starting telnet negotiations with client");
+  }
+  
   TelnetServerEventData clientData;
   
   clientData.clientTerminalType = "UNKNOWN";
@@ -71,10 +75,18 @@ TelnetServerEventData TelnetServer::basicInitializationRoutine(Connection& con) 
   char buffer[100];
   buffer[0] = 0;
   
+  if(this->isVerboseMode) {
+    this->log("Configuring ECHO option");
+  }
+  
   if(this->optionEcho) {
     con << TelnetMessage::commandFrom("IAC WONT ECHO");
   } else {
     con << TelnetMessage::commandFrom("IAC WILL ECHO");
+  }
+  
+  if(this->isVerboseMode) {
+    this->log("Configuring telnet SGA/LINEMODE options");
   }
   
   if(this->optionLinemode) {
@@ -83,6 +95,10 @@ TelnetServerEventData TelnetServer::basicInitializationRoutine(Connection& con) 
   } else {
     con << TelnetMessage::commandFrom("IAC DONT LINEMODE");
     con << TelnetMessage::commandFrom("IAC DONT SUPRESS_GA");
+  }
+  
+  if(this->isVerboseMode) {
+    this->log("Reading client answers");
   }
   
   int cycle = 0;
@@ -96,8 +112,16 @@ TelnetServerEventData TelnetServer::basicInitializationRoutine(Connection& con) 
     }
   }
   
+  if(this->isVerboseMode) {
+    this->log("Pingping client terminal type");
+  }
+  
   con << TelnetMessage::commandFrom("IAC DO TERM_TYPE");
   cycle = 0;
+  
+  if(this->isVerboseMode) {
+    this->log("Awaiting response");
+  }
   
   while(true) {
     Message message;
@@ -112,6 +136,9 @@ TelnetServerEventData TelnetServer::basicInitializationRoutine(Connection& con) 
           }
         } else if(sscanf(com.c_str(), "IAC SB TERM_TYPE IS %s IAC SE", buffer)) {
           clientData.clientTerminalType = std::string(buffer);
+          if(this->isVerboseMode) {
+            this->log(std::string("Got client terminal type: \"")+std::string(buffer)+"\"");
+          }
           break;
         }
       }
@@ -119,8 +146,15 @@ TelnetServerEventData TelnetServer::basicInitializationRoutine(Connection& con) 
     usleep(1000);
     ++cycle;
     if(cycle > TELNET_INITIALIZATION_MAX_TIMEOUT_MS) {
+      if(this->isVerboseMode) {
+        this->log("Response timed out");
+      }
       break;
     }
+  }
+  
+  if(this->isVerboseMode) {
+    this->log("Ended telnet negotiations");
   }
   
   return clientData;
@@ -148,6 +182,10 @@ bool TelnetServer::init() {
     
     TelnetServerEvent event(this, tcpEvent.getConnectionSource(), clientData);
     this->clientConnected(event);
+    
+    if(this->isVerboseMode) {
+      this->log("Terminating client telnet session");
+    }
   });
 
   return true;

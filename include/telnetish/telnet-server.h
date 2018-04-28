@@ -275,6 +275,7 @@ protected:
   bool inited;
   bool optionEcho;
   bool optionLinemode;
+  bool isVerboseMode;
 
 public:
 
@@ -282,12 +283,17 @@ public:
     this->inited = false;
     this->optionEcho = true;
     this->optionLinemode = false;
+    this->isVerboseMode = false;
   }
 
   ~TelnetServer() {
 
   }
 
+  void setVerbose(bool mode = true) {
+    this->isVerboseMode = mode;
+  }
+  
   void setOptionEcho(bool optionValue) {
     this->optionEcho = optionValue;
   }

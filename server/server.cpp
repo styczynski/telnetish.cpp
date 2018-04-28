@@ -87,16 +87,98 @@ void menu_start(TermProgram& program) {
   menu1(0, program);
 }
 
-int menu1(int first_opt, TermProgram& program) {
-    
-    //clear();
-    for(int y=1;y<=25;++y) {
-      for(int x=5;x<=80;++x) {
-        move(y, x);
-        addch('#');
-      }
+int displayMenu(std::string list[], std::string descriptions[], int first_opt, TermProgram& program) {
+  
+  for(int y=1;y<=25;++y) {
+    for(int x=5;x<=80;++x) {
+      move(y, x);
+      addch('#');
     }
+  }
+  refresh();
+  mvprintw(3, 12, "[ Terminal type: %s ]", program.getTerminalType().c_str());
+  
+  char item[20];
+  int ch = '?';
+  int i = first_opt;
+
+  WINDOW *menuWindow;
+  WINDOW *descriptionWindow;
+  
+  menuWindow = newwin(8, 20, 5, 10);
+  descriptionWindow = newwin(14, 50, 5, 31);
+  
+  keypad(menuWindow, TRUE);
+   
+  attron(COLOR_PAIR(2));
+  mvprintw(26, 20, menu_message.c_str());
+  attroff(COLOR_PAIR(2));
+  refresh();
+   
+  do { 
+  
+    //clear();
+    wclear(menuWindow);
+    wclear(descriptionWindow);
     refresh();
+  
+    switch(ch) {
+      case KEY_UP:
+        i--;
+        i = (i<0)?2:i;
+        break;
+      case KEY_DOWN:
+        i++;
+        i = (i>2)?0:i;
+        break;
+    }
+  
+    attron(COLOR_PAIR(2));
+    mvprintw(26, 20, menu_message.c_str());
+    attroff(COLOR_PAIR(2));
+  
+    for(int j=0; j<3; j++) {
+      if(j==i) {
+          wattron(menuWindow, A_STANDOUT);
+      } else {
+          wattroff(menuWindow, A_STANDOUT);
+      }
+      sprintf(item, "%-16s",  list[j].c_str());
+      mvwprintw(menuWindow, j+2, 2, "%s", item);
+    }
+    
+    sprintf(item, "%-16s",  list[i].c_str());
+    
+    box(menuWindow, 0, 0); 
+    box(descriptionWindow, 0, 0);
+    
+    keypad(menuWindow, TRUE);
+    wclear(descriptionWindow);
+    box(descriptionWindow, 0, 0);
+    
+    wattron(descriptionWindow, COLOR_PAIR(1));
+    mvwprintw(descriptionWindow, 3, 2, "[ %-10s ]", item);
+    wattroff(descriptionWindow, COLOR_PAIR(1));
+    
+    mvwprintw(descriptionWindow, 5, 2, "%s", descriptions[i].c_str());
+    box(descriptionWindow, 0, 0);
+    wrefresh(descriptionWindow);
+    
+    wrefresh(menuWindow);
+    wrefresh(descriptionWindow);
+    refresh();
+    
+    move(0,0);
+    addch(' ');
+  } while((ch = wgetch(menuWindow)) != 10);
+
+  delwin(descriptionWindow);
+  delwin(menuWindow);
+  
+  return i;
+}
+
+int menu1(int first_opt, TermProgram& program) {
     
     std::string list[] = {
       "Opcja A",
@@ -110,84 +192,7 @@ int menu1(int first_opt, TermProgram& program) {
       "E tam... Ide stad!"
     };
     
-    char item[20];
-    int ch = '?';
-    int i=first_opt;
- 
-    WINDOW *menuWindow;
-    WINDOW *descriptionWindow;
-    
-    menuWindow = newwin(8, 20, 5, 10);
-    descriptionWindow = newwin(14, 50, 5, 31);
-    
-    keypad(menuWindow, TRUE);
-     
-    attron(COLOR_PAIR(2));
-    mvprintw(26, 20, menu_message.c_str());
-    attroff(COLOR_PAIR(2));
-    refresh();
-     
-    do { 
-    
-      //clear();
-      wclear(menuWindow);
-      wclear(descriptionWindow);
-      refresh();
-    
-      switch(ch) {
-        case KEY_UP:
-          i--;
-          i = (i<0)?2:i;
-          break;
-        case KEY_DOWN:
-          i++;
-          i = (i>2)?0:i;
-          break;
-      }
-    
-      mvprintw(2, 12, "[ Terminal type: %s ]", program.getTerminalType().c_str());
-    
-      attron(COLOR_PAIR(2));
-      mvprintw(26, 20, menu_message.c_str());
-      attroff(COLOR_PAIR(2));
-    
-      for(int j=0; j<3; j++) {
-        if(j==i) {
-            wattron(menuWindow, A_STANDOUT);
-        } else {
-            wattroff(menuWindow, A_STANDOUT);
-        }
-        sprintf(item, "%-16s",  list[j].c_str());
-        mvwprintw(menuWindow, j+2, 2, "%s", item);
-      }
-      
-      sprintf(item, "%-16s",  list[i].c_str());
-      
-      box(menuWindow, 0, 0); 
-      box(descriptionWindow, 0, 0);
-      
-      keypad(menuWindow, TRUE);
-      wclear(descriptionWindow);
-      box(descriptionWindow, 0, 0);
-      
-      wattron(descriptionWindow, COLOR_PAIR(1));
-      mvwprintw(descriptionWindow, 3, 2, "[ %-10s ]", item);
-      wattroff(descriptionWindow, COLOR_PAIR(1));
-      
-      mvwprintw(descriptionWindow, 5, 2, "%s", descriptions[i].c_str());
-      box(descriptionWindow, 0, 0);
-      wrefresh(descriptionWindow);
-      
-      wrefresh(menuWindow);
-      wrefresh(descriptionWindow);
-      refresh();
-      
-      move(0,0);
-      addch(' ');
-    } while((ch = wgetch(menuWindow)) != 10);
- 
-    delwin(descriptionWindow);
-    delwin(menuWindow);
+    int i = displayMenu(list, descriptions, first_opt, program);
     
     if(i == 2) {
       menu_end(program);
@@ -204,16 +209,7 @@ int menu1(int first_opt, TermProgram& program) {
 
 
 int menu2(int first_opt, TermProgram& program) {
-    
-    //clear();
-    for(int y=1;y<=25;++y) {
-      for(int x=5;x<=80;++x) {
-        move(y, x);
-        addch('#');
-      }
-    }
-    refresh();
-    
+   
     std::string list[] = {
       "Opcja B1",
       "Opcja B2",
@@ -226,84 +222,7 @@ int menu2(int first_opt, TermProgram& program) {
       "Moge wrocic spowrotem?"
     };
     
-    char item[20];
-    int ch = '?';
-    int i = first_opt;
- 
-    WINDOW *menuWindow;
-    WINDOW *descriptionWindow;
-    
-    menuWindow = newwin(8, 20, 5, 10);
-    descriptionWindow = newwin(14, 50, 5, 31);
-    
-    keypad(menuWindow, TRUE);
-     
-    attron(COLOR_PAIR(2));
-    mvprintw(26, 20, menu_message.c_str());
-    attroff(COLOR_PAIR(2));
-    refresh();
-     
-    do { 
-    
-      //clear();
-      wclear(menuWindow);
-      wclear(descriptionWindow);
-      refresh();
-    
-      switch(ch) {
-        case KEY_UP:
-          i--;
-          i = (i<0)?2:i;
-          break;
-        case KEY_DOWN:
-          i++;
-          i = (i>2)?0:i;
-          break;
-      }
-    
-      mvprintw(2, 12, "[ Terminal type: %s ]", program.getTerminalType().c_str());
-    
-      attron(COLOR_PAIR(2));
-      mvprintw(26, 20, menu_message.c_str());
-      attroff(COLOR_PAIR(2));
-    
-      for(int j=0; j<3; j++) {
-        if(j==i) {
-            wattron(menuWindow, A_STANDOUT);
-        } else {
-            wattroff(menuWindow, A_STANDOUT);
-        }
-        sprintf(item, "%-16s",  list[j].c_str());
-        mvwprintw(menuWindow, j+2, 2, "%s", item);
-      }
-      
-      sprintf(item, "%-16s",  list[i].c_str());
-      
-      box(menuWindow, 0, 0); 
-      box(descriptionWindow, 0, 0);
-      
-      keypad(menuWindow, TRUE);
-      wclear(descriptionWindow);
-      box(descriptionWindow, 0, 0);
-      
-      wattron(descriptionWindow, COLOR_PAIR(1));
-      mvwprintw(descriptionWindow, 3, 2, "[ %-10s ]", item);
-      wattroff(descriptionWindow, COLOR_PAIR(1));
-      
-      mvwprintw(descriptionWindow, 5, 2, "%s", descriptions[i].c_str());
-      box(descriptionWindow, 0, 0);
-      wrefresh(descriptionWindow);
-      
-      wrefresh(menuWindow);
-      wrefresh(descriptionWindow);
-      refresh();
-      
-      move(0,0);
-      addch(' ');
-    } while((ch = wgetch(menuWindow)) != 10);
- 
-    delwin(descriptionWindow);
-    delwin(menuWindow);
+    int i = displayMenu(list, descriptions, first_opt, program);
     
     if(i == 2) {
       return menu1(0, program);

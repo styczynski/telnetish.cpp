@@ -64,7 +64,7 @@ public:
         if(aytCounter % 50 == 0) {
           event.getConnection() << TelnetMessage::commandFrom("IAC DO STATUS");
         }
-        if(aytProgramCounter > 500) {
+        if(aytProgramCounter > 200) {
           program.send(Message("?"));
           aytProgramCounter = 0;
         }

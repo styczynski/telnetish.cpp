@@ -33,7 +33,7 @@ void printUsage() {
   std::cout << "  --nocolors [ -nc ]   Disable any text colouring\n";
   std::cout << "  --verbose  [ -v ]    Verbose mode\n";
   std::cout << "\n";
-  exit(-1);
+  exit(1);
 }
 
 int main(int argc, char** argv) {
@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
       std::cout << message.toString() << "\n";
       std::cout << "  Terminatting due to the error...\n";
       std::cout.flush();
-      exit(-1);
+      exit(1);
     }
   });
   

@@ -3,7 +3,7 @@ project(TelnetServer CXX)
 
 if (NOT CMAKE_BUILD_TYPE)
     message(STATUS "No build type selected, default to Release")
-    set(CMAKE_BUILD_TYPE "Debug")
+    set(CMAKE_BUILD_TYPE "Release")
 endif ()
 
 # We do want to see make calling things
@@ -23,7 +23,7 @@ set(CMAKE_C_FLAGS_DEBUG "-g -O0 ")
 include_directories(./src/ ./include/ ./server/)
 
 # Sources
-file(GLOB SRC_FILES ./src/*.cpp ./server/*.cpp)
+file(GLOB SRC_FILES ./src/*.cc ./server/*.cc)
 
 # Specify source files
 add_executable(telnet_server ${SRC_FILES})

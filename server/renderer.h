@@ -10,6 +10,8 @@
 #ifndef __RENDERER__
 #define __RENDERER__
 
+#include <iomanip>
+#include <sstream>
 #include <ncurses.h>
 #include <iostream>
 #include <unistd.h>
@@ -132,7 +134,7 @@ int displayMenu(std::string list[], std::string descriptions[], int first_opt, T
   refresh();
   
   // Print client terminal type
-  mvprintw(3, 12, "[ Terminal type: %s ]", program.getTerminalType().c_str());
+  mvprintw(2, 12, "[ Terminal type: %-20s ]", program.getTerminalType().c_str());
   
   char item[20];
   int ch = '?';
@@ -175,6 +177,17 @@ int displayMenu(std::string list[], std::string descriptions[], int first_opt, T
     if(!rendererOptions.noColors) attron(COLOR_PAIR(2));
     mvprintw(26, 20, menu_message.c_str());
     if(!rendererOptions.noColors) attroff(COLOR_PAIR(2));
+  
+    // Obtain current server time
+    auto now = std::time(nullptr);
+    std::stringstream ss;
+    std::string nowDescription = "";
+    ss << std::put_time(std::gmtime(&now), "%H:%M:%S");
+    nowDescription = ss.str();
+    
+    // Print current server time
+    mvprintw(3, 12, "[ Server time: %-20s   ]", nowDescription.c_str());
+    
   
     // Render menu options
     for(int j=0; j<3; j++) {

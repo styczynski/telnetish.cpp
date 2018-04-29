@@ -1,3 +1,11 @@
+/** @file
+*
+*  Implementation of TCP connection.
+*
+*  @author Piotr Styczyński <piotrsty1@gmail.com>
+*  @copyright MIT
+*  @date 2018-04-29
+*/
 #ifndef __TCP_CONNECTION_H__
 #define __TCP_CONNECTION_H__
 
@@ -13,9 +21,9 @@
 #include <functional>
 #include <iostream>
 
-#define DEFAULT_CONNECTION_ID  -1
-#define CONNECTION_NO_SOCKET   -1
-
+/**
+ * Class representing TCP socket connection.
+ */
 class TCPConnection : public Connection {
 protected:
   

@@ -1,14 +1,29 @@
+/** @file
+*
+*  Implmentation of telnet server application.
+*
+*  @author Piotr Styczyński <piotrsty1@gmail.com>
+*  @copyright MIT
+*  @date 2018-04-29
+*/
+#include <signal.h>
 #include <telnetish/simple-telnet-server.h>
 #include <telnetish/term-program.h>
 #include <telnetish/message.h>
 
 #include "renderer.h"
 
+/**
+ * Configuration options for the server.
+ */
 struct ServerOptions {
   bool selfMode = false;
   bool verboseMode = false;
 } serverOptions;
 
+/**
+ * Print application usage information
+ */
 void printUsage() {
   std::cout << "Usage: server <port> [--local | -l] [--nosplash]\n";
   std::cout << "\n";
@@ -22,12 +37,15 @@ void printUsage() {
 
 int main(int argc, char** argv) {
 
+  // Ignore sigpipe errors
   signal(SIGPIPE, SIG_IGN);
   
+  // Invalid number of arguments
   if(argc<=1) {
     printUsage();
   }
   
+  // Parse cli flags
   for(int i=2;i<argc;++i) {
     std::string opt(argv[i]);
     if(opt == "--local" || opt == "-l") {
@@ -43,18 +61,22 @@ int main(int argc, char** argv) {
     }
   }
   
+  // Check if port is valid number
   try {
     std::stoi(std::string(argv[1]));
   } catch(...) {
     printUsage();
   }
   
+  // Setup subprogram
   TermProgram program(renderer);
   if(serverOptions.selfMode) {
+    // Run program in un-controlled mode if self mode setting was specified
     program.start();
     return 0;
   }
   
+  // Setup the telent server
   SimpleTelnetServer server(program);
   server.setPort(argv[1]);
   server.setVerbose(serverOptions.verboseMode);
@@ -67,6 +89,8 @@ int main(int argc, char** argv) {
       exit(-1);
     }
   });
+  
+  // Start server
   server.start();
 
   return 0;

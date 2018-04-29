@@ -1,3 +1,11 @@
+/** @file
+*
+*  Utilities to run subprograms.
+*
+*  @author Piotr Styczyński <piotrsty1@gmail.com>
+*  @copyright MIT
+*  @date 2018-04-29
+*/
 #ifndef __TERM_PROGRAM_H__
 #define __TERM_PROGRAM_H__
 
@@ -14,11 +22,30 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-
-#define REMOTE_TERMINAL_DEFAULT_BUFFER_SIZE  5064
-
+/**
+ * @def RCV_MAX_LOOP_COUNT
+ *
+ * Maximum number of loops done before TermProgram receive function terminates.
+ */
 #define RCV_MAX_LOOP_COUNT 10
 
+/**
+ * Class representing runnable subprogram.
+ *
+ *  By default each subprogram runs in the default routine of the application.
+ * In the controlled mode the application is forked and made running the subprogram.
+ * In this controlled mode all input/output is provided by the host.
+ *
+ * In non controlled mode subprogram starts in the same routine and there is no way
+ * to provide output/input for it programatically (input is extracted from stdin and
+ * output from stdout).
+ *
+ * So in:
+ *  - uncontrolled mode:
+ *    start() is blocking and send/receive wont work as desired
+ *  - controlled mode:
+ *    start() is non-blocking and send/receive works as pipe interface
+ */
 class TermProgram {
 public:
   using RendererFn = std::function<void(TermProgram&)>;
@@ -40,6 +67,9 @@ private:
   
 public:
 
+  /**
+   * Create new program from function.
+   */
   TermProgram(RendererFn bodyFn) {
     inited = false;
     controlled = false;
@@ -49,14 +79,29 @@ public:
     terminalTypeName = "";
   }
   
+  /**
+   * Create new empty program.
+   */
   TermProgram() {
     TermProgram([](TermProgram& program)->void {});
   }
   
+  /**
+   * Set terminal type for the program.
+   *
+   * @param[in] type : terminal type name
+   */
   void setTerminalType(std::string type) {
     terminalTypeName = type;
   }
   
+  /**
+   * Get terminal type for the program.
+   * If the terminal type was not specified or it's empty string
+   * then "UNKNOWN" is returned.
+   *
+   * @return terminal type name
+   */
   std::string getTerminalType() {
     if(terminalTypeName == "") {
       return "UNKNOWN";
@@ -64,14 +109,30 @@ public:
     return terminalTypeName;
   }
   
+  /**
+   * Set if program should be controlled.
+   * This have effect only before start() call.
+   *
+   * @param[in] value : Set controlled mode?
+   */
   void setControlled(bool value = true) {
     controlled = value;
   }
   
+  /**
+   * Set program function body.
+   *
+   * @param[in] fn : set subprogram main function
+   */
   void setBody(RendererFn fn) {
     body = fn;
   }
   
+  /**
+   * Receive new message from the subprogram (non-blocking).
+   *
+   * @return Received message
+   */
   Message receive() {
     
     std::string ret;
@@ -101,6 +162,11 @@ public:
     return retMessage;
   }
   
+  /**
+   * Send new message to the subprogram (non-blocking).
+   *
+   * @param[in] message : Message to be sent
+   */
   void send(Message message) {
     for(int i=1;i<message.getSize();++i) {
       if(message[i-1] == 13 && message[i] == 10) {
@@ -111,16 +177,33 @@ public:
     sentCallback(*this, message);
   }
   
+  /**
+   * Receive new message from the subprogram (non-blocking).
+   *
+   * @param[in] output : Message that received content will be saved to
+   * @return self
+   */
   TermProgram& operator>>(Message& output) {
     output = receive();
     return *this;
   }
   
+   /**
+   * Send new message to the subprogram (non-blocking).
+   *
+   * @param[in] input : Message to be sent
+   * @return self
+   */
   TermProgram& operator<<(Message input) {
     send(input);
     return *this;
   }
   
+  /**
+   * Add message received listener.
+   *
+   * @param[in] fn : listener listening to the received messages
+   */
   void onMessageReceived(MessageReceivedCallbackFn fn) {
     const auto next = receivedCallback;
     receivedCallback = [fn, next](TermProgram& rp, Message& m)->void {
@@ -129,6 +212,11 @@ public:
     };
   }
   
+  /**
+   * Add message sent listener.
+   *
+   * @param[in] fn : listener listening to the sent messages
+   */
   void onMessageSent(MessageSentCallbackFn fn) {
     const auto next = sentCallback;
     sentCallback = [fn, next](TermProgram& rp, Message& m)->void {
@@ -137,6 +225,15 @@ public:
     };
   }
   
+  /**
+   * Wait for subprogram termination receiving all messages and triggering listeners.
+   * This function is blocking.
+   * It will terminate only when program is non-controlled or has been terminated.
+   * The function accepts waiting function triggered in a infinite loop util termination
+   * has occurred.
+   * 
+   * @param[in] waitFn : waiting function executed in a loop 
+   */
   void wait(WaitingFn waitFn) {
     if(!controlled) return;
     
@@ -161,6 +258,9 @@ public:
     }
   }
   
+  /**
+   * Starts the subprogram
+   */
   int start() {
     
     inited = true;
@@ -223,6 +323,10 @@ public:
     }
   }
   
+  /**
+   * Forcefully kills the program.
+   * (does not work in un-controlled mode)
+   */
   void end() {
     
     if(inited) {

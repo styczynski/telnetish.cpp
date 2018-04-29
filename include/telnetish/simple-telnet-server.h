@@ -1,3 +1,11 @@
+/** @file
+*
+*  Implementation of simplified telnet server.
+*
+*  @author Piotr Styczyński <piotrsty1@gmail.com>
+*  @copyright MIT
+*  @date 2018-04-29
+*/
 #ifndef __SIMPLE_TELNET_SERVER_H__
 #define __SIMPLE_TELNET_SERVER_H__
 
@@ -6,8 +14,18 @@ class SimpleTelnetServer;
 #include <telnetish/telnet-server.h>
 #include <telnetish/term-program.h>
 
+/**
+ * @def MAX_AYT_TIMEOUT
+ * 
+ * Higher the number, the more time client has got to answer server requests.
+ * This value is used to determine if client is till connected and to quickly terminate
+ * connection if it's not. 
+ */
 #define MAX_AYT_TIMEOUT 1000
 
+/**
+ * Simple telnet server for simplier usage than default TelnetServer.
+ */
 class SimpleTelnetServer : public TelnetServer {
 public:
   
@@ -15,6 +33,12 @@ protected:
   TermProgram prog;
 
 public:
+
+  /**
+   * Create telnet server that will run the supplied program for the client.
+   *
+   * @param[in] program : program that client interacts with
+   */
   SimpleTelnetServer(TermProgram program) : TelnetServer() {
     setOptionEcho(false);
     setOptionLinemode(true);
@@ -74,6 +98,11 @@ public:
     });
   }
   
+  /** 
+   * Sets the default server program.
+   *
+   * @param[in] program : program that client interacts with
+   */
   void setProgram(TermProgram program) {
     this->prog = program;
   }

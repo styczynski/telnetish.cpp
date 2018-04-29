@@ -1,3 +1,11 @@
+/** @file
+*
+*  Implementation of TCP server.
+*
+*  @author Piotr Styczyński <piotrsty1@gmail.com>
+*  @copyright MIT
+*  @date 2018-04-29
+*/
 #ifndef __TCP_SERVER_H__
 #define __TCP_SERVER_H__
 
@@ -20,20 +28,26 @@ class TCPServer;
 #include <inttypes.h>
 #include <functional>
 
+/** 
+ * Data attached to server events.
+ */
 class TCPServerEventData {
 
 };
 
+/**
+ * TCP server class
+ */
 class TCPServer : public Server<TCPServerEventData> {
 public:
   using TCPServerEvent = ServerEvent<TCPServerEventData>;
 
 protected:
-  int in_sock;
-  int out_sock;
-  bool inited;
-  bool on;
-  int next_client_id;
+  int in_sock;        //< Client initial (listen-mode) socket
+  int out_sock;       //< Client output socket
+  bool inited;        //< Is server configured?
+  bool on;            //< Is server still working?
+  int next_client_id; //< Next ID for client connection
 
 public:
 

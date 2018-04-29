@@ -1,3 +1,11 @@
+/** @file
+*
+*  Implementation of Telnet server.
+*
+*  @author Piotr Styczyński <piotrsty1@gmail.com>
+*  @copyright MIT
+*  @date 2018-04-29
+*/
 #ifndef __TELNET_SERVER_H__
 #define __TELNET_SERVER_H__
 
@@ -22,7 +30,9 @@ class TelnetServer;
 #include <string>
 #include <utility>
 
-
+/**
+ * Definitions of all telnet opcodes
+ */
 #define     _BINARY          0
 #define     _IS              0
 #define     _ECHO            1
@@ -77,15 +87,36 @@ class TelnetServer;
 #define     _IAC             255
 
 
-
+/**
+ * Macro that is used in telnet-server.cpp
+ * to create command <-> byte code mapping.
+ */
 #define TNDEF(NAME) { #NAME, _ ## NAME },
 
+/**
+ * Helper to provide utilities to work with telnet communication.
+ */
 class TelnetMessage {
 public:
 
+  /**
+   * Mapping between telnet commands and their byte codes
+   */
   static const std::vector<std::pair<std::string, int>> TELNET_COMMAND_TABLE;
+  
+  /**
+   * Mapping between telnet subnegotiation commands and their byte codes
+   */
   static const std::vector<std::pair<std::string, int>> TELNET_NEGOTIATION_COMMAND_TABLE;
   
+  /**
+   * Search telnet command mapping for the given command name.
+   *
+   * @param[in] name         : command name to be found
+   * @param[in] SBSearchMode : should also search TELNET_NEGOTIATION_COMMAND_TABLE?
+   *
+   * @return byte code of the command
+   */
   static int findTelnetCommandByName(std::string name, const bool SBSearchMode=false) {
 
     if(SBSearchMode) {
@@ -107,6 +138,14 @@ public:
     throw "Invalid Telnet command: unknown command was specified!";
   }
 
+  /**
+   * Search telnet command mapping for the given command byte code.
+   *
+   * @param[in] id           : command code to be found
+   * @param[in] SBSearchMode : should also search TELNET_NEGOTIATION_COMMAND_TABLE?
+   *
+   * @return name of the command
+   */
   static std::string findTelnetCommandByID(int id, const bool SBSearchMode=false) {
   
     if(SBSearchMode) {
@@ -128,6 +167,12 @@ public:
     return std::string("<") + std::to_string(id) + ">";
   }
 
+  /**
+   * Decodes telnet command bytes to string representation using findTelnetCommandByID.
+   *
+   * @param[in] command : bytes sequence to be decoded
+   * @return human readable command translation
+   */
   static std::vector<std::string> decodeTelnetCommand(std::vector<int> command) {
     const int size = command.size();
     bool SBSearchMode = false;
@@ -176,6 +221,12 @@ public:
     return result;
   }
 
+  /**
+   * Encodes telnet command string to corresponding bytes.
+   *
+   * @param[in] command : string command to be encoded
+   * @return sequence of bytes corresponding to the command string
+   */
   static std::vector<int> encodeTelnetCommand(std::string command) {
     const int size = command.size();
     int lastBegin = 0;
@@ -227,10 +278,22 @@ public:
     return result;
   }
 
+  /**
+   * Translates telnet command string to the Message object.
+   *
+   * @param[in] command : string command to be encoded
+   * @return sequence of bytes corresponding to the command string
+   */
   static Message commandFrom(std::string command) {
     return Message(encodeTelnetCommand(command));
   }
 
+  /**
+   * Translates telnet message to the human readable description.
+   *
+   * @param[in] command : message with telnet command
+   * @return sequence of bytes corresponding to the command string
+   */
   static std::string commandDescription(const Message& message) {
     std::vector<std::string> strs = decodeTelnetCommand(message.toBytes());
     std::string out = "";
@@ -244,6 +307,11 @@ public:
     return out;
   }
   
+  /** 
+   * Checks if message has IAC telnet starting byte.
+   *
+   * @return if message has IAC header?
+   */
   static bool isCommand(const Message& message) {
     if(message.getSize() >= 2) {
       return ((((int)message[0])+256)%256) == _IAC && ((((int)message[1])+256)%256) != _IAC;
@@ -251,17 +319,28 @@ public:
     return ((((int)message[0])+256)%256) == _IAC;
   }
 
+  /** 
+   * Checks if message has not IAC telnet starting byte.
+   *
+   * @return if message has not IAC header?
+   */
   static bool isText(const Message& message) {
     return !isCommand(message);
   }
 
 };
 
+/**
+ * Data attached to telnet server events.
+ */
 class TelnetServerEventData {
 public:
-  std::string clientTerminalType;
+  std::string clientTerminalType; //< Name of the type of the client terminal
 };
 
+/**
+ * Class representing configurable telnet TCP server.
+ */
 class TelnetServer : public Server<TelnetServerEventData> {
 public:
   using TelnetServerEvent = ServerEvent<TelnetServerEventData>;
@@ -290,14 +369,29 @@ public:
 
   }
 
+  /**
+   * Server logs more information in verbosive mode.
+   *
+   * @param[in] mode : set verbosive mode?
+   */
   void setVerbose(bool mode = true) {
     this->isVerboseMode = mode;
   }
   
+  /**
+   * Enables telnet client echo mode.
+   *
+   * @param[in] mode : set client echo mode?
+   */
   void setOptionEcho(bool optionValue) {
     this->optionEcho = optionValue;
   }
 
+  /**
+   * Enables telnet linemode.
+   *
+   * @param[in] mode : set client linemode?
+   */
   void setOptionLinemode(bool optionValue) {
     this->optionLinemode = optionValue;
   }
@@ -308,4 +402,4 @@ public:
 
 };
 
-#endif /* __TCP_SERVER_H__ */
+#endif /* __TELNET_SERVER_H__ */

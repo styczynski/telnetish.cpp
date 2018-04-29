@@ -1,7 +1,29 @@
+/** @file
+*
+*  C++11 Connection abstraction.
+*  This file provides abstraction for socket-based connections.
+*
+*
+*  @author Piotr Styczyński <piotrsty1@gmail.com>
+*  @copyright MIT
+*  @date 2018-04-29
+*/
 #ifndef __CONNECTION_H__
 #define __CONNECTION_H__
 
+/**
+ * @def DEFAULT_CONNECTION_ID
+ * 
+ * Default ID set when the connection ID is not specified explicite.
+ */
 #define DEFAULT_CONNECTION_ID  -1
+
+/**
+ * @def CONNECTION_NO_SOCKET
+ *
+ * Default socket descriptor set when connection is initialized without specifying
+ * socket descriptor explicite.
+ */
 #define CONNECTION_NO_SOCKET   -1
 
 #include <telnetish/message.h>
@@ -9,6 +31,9 @@
 #include <vector>
 #include <string>
 
+/**
+ * Abstract class used for implementing connections via inheritance.
+ */
 class Connection : public DataSource {
 protected:
   int socket;

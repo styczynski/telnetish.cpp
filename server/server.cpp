@@ -26,8 +26,9 @@ struct ServerOptions {
  */
 void printUsage() {
   std::cout << "Usage: server <port> [--local | -l] [--nosplash]\n";
+  std::cout << "              [--nocolors | -nc] [--verbose | -v]\n";
   std::cout << "\n";
-  std::cout << "  --local [ -l ]       Run renderer without server (used to test ncurses output)\n";
+  std::cout << "  --local    [ -l ]    Run renderer without server (used to test ncurses output)\n";
   std::cout << "  --nosplash           Disable animated splash before displaying menu\n";
   std::cout << "  --nocolors [ -nc ]   Disable any text colouring\n";
   std::cout << "  --verbose  [ -v ]    Verbose mode\n";

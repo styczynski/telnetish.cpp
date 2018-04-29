@@ -2,13 +2,14 @@
 
 Simple C++ implementation of telnet server.
 
-Contents:
-    * About
-    * Building
-    * Running
-    * Implementation
-      * Directory structure
-      * About
+
+**Contents:**
+* **About**
+* **Building**
+* **Running**
+* **Implementation**
+  * **Directory structure**
+  * **About**
 
 ## About
 

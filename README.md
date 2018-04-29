@@ -39,12 +39,12 @@ The server usage looks like follows:
 
 Where there exist the following flags:
 
-| Switch                           | Description                                                                                                                                          |
-|----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `--local` <br> *Alias*: `-l`     | Run the server in local mode. In that mode server is not really a server but a local program that runs the implemented ncurses app in your terminal. |
-| `--nosplash`                     | Disable initial splash screen animation                                                                                                              |
-| `--nocolors` <br> *Alias*: `-nc` | Disable any ANSI color sequences                                                                                                                     |
-| `--verbose` <br> *Alias*: `-v`   | Verbosive output mode                                                                                                                                |
+| Switch                           | Description                                                                                                                                             |
+|----------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--local` <br> *Alias*: `-l`     | Run the server in local mode. In that mode server is not really a server<br>but a local program that runs the implemented ncurses app in your terminal. |
+| `--nosplash`                     | Disable initial splash screen animation                                                                                                                 |
+| `--nocolors` <br> *Alias*: `-nc` | Disable any ANSI color sequences                                                                                                                        |
+| `--verbose` <br> *Alias*: `-v`   | Verbosive output mode                                                                                                                                   |
 
 ## Implementation
 
